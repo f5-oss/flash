@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>فلاش — الإعدادات</title>
+  <link rel="stylesheet" href="assets/icon-animations.css">
+  <style>
+    body{font-family:system-ui, "Segoe UI", Roboto, Arial; direction:rtl;background:#f5f7fb;color:#0b1220;padding:16px}
+    .container{max-width:980px;margin:16px auto}
+    .setting-item{background:#fff;padding:12px;border-radius:10px;margin-bottom:12px;box-shadow:0 10px 30px rgba(11,18,32,0.06)}
+    .primary{background:#2e7d7a;color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+    a.back{display:inline-block;margin-bottom:12px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="index.html">← العودة إلى التطبيق</a>
+    <h1>الإعدادات</h1>
+
+    <section class="setting-item">
+      <label><input type="checkbox" id="toggleAnimation"> تفعيل الحركة للأيقونات</label>
+      <p class="hint">يمكن تعطيل الحركة للمستخدمين الحساسين للحركة.</p>
+    </section>
+
+    <section class="setting-item">
+      <label><input type="checkbox" id="toggleColorCycle" checked> تفعيل تغيير الألوان التلقائي كل دقيقة</label>
+      <p class="hint">عند الإيقاف سيبقى آخر لون مستخدَم.</p>
+    </section>
+
+    <section class="setting-item">
+      <p>قائمة العناصر (نُقلت من زر الثلاث شرط):</p>
+      <ul id="movedMenu"></ul>
+    </section>
+
+    <section class="setting-item">
+      <button id="resetPrefs" class="primary">إعادة إعدادات الواجهة للوضع الافتراضي</button>
+    </section>
+
+  </div>
+  <script src="assets/icon-animations.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!-- public/index.html with lightning canvas and 3D classes included -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FLASH - Demo (3D Lightning)</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
+  <div id="app">
+    <header>
+      <h1>FLASH — Demo</h1>
+      <div id="presence">حالة: offline</div>
+    </header>
+
+    <main>
+      <aside id="contacts">
+        <h3>الأصدقاء</h3>
+        <ul id="friendsList"></ul>
+      </aside>
+
+      <section id="chatArea">
+        <div id="conversationHeader">افتح محادثة</div>
+        <div id="messages" class="three-d-layer"></div>
+        <form id="msgForm">
+          <input id="messageInput" autocomplete="off" placeholder="اكتب رسالة..." />
+          <button type="submit">إرسال</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="/lighting.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
