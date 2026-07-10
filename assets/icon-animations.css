@@ -1,0 +1,9 @@
+/* assets/icon-animations.css */
+:root{ --icon-color: #6aa0d6; }
+
+.icon-animated{ transition: transform 800ms ease, color 800ms ease, box-shadow 800ms ease; }
+@keyframes floaty { 0%{ transform: translateY(0) rotate(-1deg);} 50%{ transform: translateY(-8px) rotate(1deg);} 100%{ transform: translateY(0) rotate(-1deg);} }
+@media (prefers-reduced-motion: no-preference){ .icon-animated.animated{ animation: floaty 6s ease-in-out infinite; } }
+
+/* hide the old three-dots/hamburger if any */
+.sidebar-toggle{ display:none !important; }
