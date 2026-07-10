@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLASH V - تطبيق التواصل الاحترافي</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff; transition: all 0.5s ease; }
+        
+        /* الثيمات */
+        body.dark-theme { background: linear-gradient(135deg, #0f0f23 0%, #1a0a2e 100%); }
+        body.light-theme { background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%); color: #333; }
+        body.blue-theme { background: linear-gradient(135deg, #001a4d 0%, #003d99 100%); }
+        body.purple-theme { background: linear-gradient(135deg, #2d1b4e 0%, #1a0a2e 100%); }
+        
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, rgba(0,0,0,0.7), rgba(26,26,46,0.5));
+            z-index: 1; pointer-events: none;
+            transition: all 0.5s ease;
+        }
+
+        body.ghost-mode .overlay {
+            background: linear-gradient(45deg, rgba(10,10,30,0.9), rgba(26,10,46,0.8));
+            box-shadow: inset 0 0 60px rgba(100, 50, 200, 0.3);
+        }
+
+        /* القائمة الجانبية */
+        .sidebar {
+            position: fixed;
+            right: -300px;
+            top: 0;
+            width: 300px;
+            height: 100%;
+            background: rgba(22, 22, 37, 0.98);
+            backdrop-filter: blur(15px);
+            z-index: 999;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #e94560;
+        }
+
+        .sidebar-item.active {
+            background: rgba(233, 69, 96, 0.2);
+            border-left-color: #e94560;
+            color: #e94560;
+        }
+
+        /* المحتوى الرئيسي */
+        .main-content {
+            position: relative;
+            z-index: 3;
+            height: calc(100% - 80px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* شاشة البدء السريع */
+        .welcome-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+            animation: slideIn 0.5s ease;
+        }
+
+        .welcome-screen.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 40px;
+        }
+
+        .welcome-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .welcome-btn {
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 122, 0.3));
+            border: 2px solid rgba(233, 69, 96, 0.5);
+            color: #fff;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .welcome-btn:hover {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.6), rgba(255, 107, 122, 0.6));
+            transform: translateY(-5px);
+        }
+
+        /* لوحة المعلومات */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-header p {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(0, 217, 255, 0.1));
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-10px);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.2);
+        }
+
+        .dashboard-card-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-card-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+
+        .dashboard-card-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* الشاشات الأخرى */
+        .screen {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* شاشة الدردشة المحسنة */
+        .chat-screen-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 15px;
+        }
+
+        .chat-header {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header-info {
+            text-align: right;
+        }
+
+        .chat-header-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .chat-header-status {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .call-buttons {
+            display: flex;
+            gap: 8px;
+            position: relative;
+        }
+
+        .call-btn {
+            padding: 8px 12px;
+            background: rgba(233, 69, 96, 0.3);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            color: #ff6b7a;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .call-btn:hover {
+            background: rgba(233, 69, 96, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .call-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: rgba(22, 22, 37, 0.98);
+            border: 2px solid #e94560;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+            min-width: 150px;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .call-menu.active {
+            display: block;
+        }
+
+        .call-menu-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .call-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .call-menu-item:hover {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .chat-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .message-bubble {
+            margin-bottom: 15px;
+            animation: messageSlide 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-bubble.sent {
+            justify-content: flex-end;
+        }
+
+        .message-bubble.received {
+            justify-content: flex-start;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .message-content {
+            max-width: 60%;
+            padding: 12px 15px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+
+        .message-bubble.sent .message-content {
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            border-radius: 15px 5px 15px 15px;
+        }
+
+        .message-bubble.received .message-content {
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 5px 15px 15px 15px;
+        }
+
+        .chat-input-area {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .message-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+
+        .message-input-row input {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .message-input-row input:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .message-input-row button {
+            padding: 12px;
+            background: rgba(233, 69, 96, 0.3);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            color: #ff6b7a;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .message-input-row button:hover {
+            background: rgba(233, 69, 96, 0.6);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b7a) !important;
+            color: #fff !important;
+            font-weight: bold;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .quick-reply {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .quick-reply-btn {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .quick-reply-btn:hover {
+            background: rgba(233, 69, 96, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* قائمة المرفقات */
+        .attachments-menu {
+            display: none;
+            position: absolute;
+            bottom: 60px;
+            left: 10px;
+            background: rgba(22, 22, 37, 0.98);
+            border: 2px solid #e94560;
+            border-radius: 15px;
+            overflow: hidden;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            min-width: 200px;
+        }
+
+        .attachments-menu.active {
+            display: block;
+        }
+
+        .attachment-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .attachment-item:last-child {
+            border-bottom: none;
+        }
+
+        .attachment-item:hover {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+            transform: translateX(-5px);
+        }
+
+        /* الملف الشخصي */
+        .profile-container {
+            display: none;
+            text-align: center;
+        }
+
+        .profile-container.active {
+            display: block;
+        }
+
+        .profile-header {
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .profile-id {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .profile-bio {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .profile-stat {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .profile-stat-number {
+            font-size: 22px;
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .profile-stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* البحث المتقدم */
+        .search-container {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .search-container.active {
+            display: block;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .search-suggestions {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .search-suggestion {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .search-suggestion:hover {
+            background: rgba(233, 69, 96, 0.2);
+        }
+
+        /* مركز الإشعارات */
+        .notifications-center {
+            display: none;
+        }
+
+        .notifications-center.active {
+            display: block;
+        }
+
+        .notification-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #e94560;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .notification-item:hover {
+            background: rgba(233, 69, 96, 0.15);
+        }
+
+        .notification-content {
+            text-align: right;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .notification-action {
+            display: flex;
+            gap: 8px;
+        }
+
+        .notification-btn {
+            padding: 6px 12px;
+            background: rgba(233, 69, 96, 0.3);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .notification-btn:hover {
+            background: rgba(233, 69, 96, 0.6);
+        }
+
+        /* الأنشطة الحية */
+        .activities-feed {
+            display: none;
+        }
+
+        .activities-feed.active {
+            display: block;
+        }
+
+        .activity-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .activity-icon {
+            font-size: 30px;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* الإنجازات والشارات */
+        .achievements {
+            display: none;
+        }
+
+        .achievements.active {
+            display: block;
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+        }
+
+        .achievement-card {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .achievement-card:hover {
+            transform: scale(1.1);
+            border-color: #e94560;
+        }
+
+        .achievement-card.locked {
+            opacity: 0.5;
+        }
+
+        .achievement-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .achievement-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .achievement-progress {
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* نظام التنبيهات الذكية */
+        .smart-reminders {
+            display: none;
+        }
+
+        .smart-reminders.active {
+            display: block;
+        }
+
+        .reminders-header {
+            margin-bottom: 30px;
+        }
+
+        .reminders-header h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .add-reminder-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            border: none;
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .add-reminder-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(233, 69, 96, 0.3);
+        }
+
+        .reminders-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .reminder-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(233, 69, 96, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reminder-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #e94560;
+            box-shadow: 0 8px 20px rgba(233, 69, 96, 0.2);
+        }
+
+        .reminder-card.active-reminder {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .reminder-info {
+            flex: 1;
+        }
+
+        .reminder-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #e94560;
+        }
+
+        .reminder-condition {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .reminder-message {
+            font-size: 14px;
+            background: rgba(0, 217, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            border-left: 3px solid #00d9ff;
+        }
+
+        .reminder-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .reminder-toggle {
+            width: 50px;
+            height: 28px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .reminder-toggle.enabled {
+            background: #00ff88;
+            border-color: #00ff88;
+        }
+
+        .reminder-toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s ease;
+        }
+
+        .reminder-toggle.enabled::after {
+            left: 22px;
+        }
+
+        .reminder-delete-btn {
+            padding: 6px 12px;
+            background: rgba(255, 50, 50, 0.3);
+            border: 1px solid rgba(255, 50, 50, 0.5);
+            color: #ff6b7a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .reminder-delete-btn:hover {
+            background: rgba(255, 50, 50, 0.6);
+        }
+
+        /* الشريط السفلي */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(22, 22, 37, 0.95);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .nav-item {
+            cursor: pointer;
+            color: #888;
+            font-size: 11px;
+            text-align: center;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            position: relative;
+        }
+
+        .nav-item.active-nav {
+            color: #e94560;
+        }
+
+        .nav-item > div:first-child {
+            font-size: 20px;
+        }
+
+        /* الأيقونة العائمة */
+        .sidebar-toggle {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #e94560;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(233, 69, 96, 0.6);
+        }
+
+        /* وضع الشبح */
+        .ghost-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 5;
+            background: rgba(100, 50, 200, 0.8);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(200, 100, 255, 0.5);
+            animation: ghostGlow 2s ease-in-out infinite;
+        }
+
+        .ghost-indicator.active {
+            display: flex;
+        }
+
+        @keyframes ghostGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(100, 50, 200, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(200, 100, 255, 0.8); }
+        }
+
+        /* النوافذ المنبثقة */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a2e;
+            border: 2px solid #e94560;
+            padding: 25px;
+            border-radius: 15px;
+            z-index: 1000;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #e94560;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.save {
+            background: linear-gradient(135deg, #e94560, #ff6b7a);
+            color: #fff;
+        }
+
+        .modal-btn.save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .modal-btn.cancel:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff6b7a;
+        }
+
+        /* تأثيرات */
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="dark-theme normal-mode">
+
+    <div class="overlay"></div>
+
+    <!-- مؤشر وضع الشبح -->
+    <div class="ghost-indicator" id="ghostIndicator">
+        <div style="width: 8px; height: 8px; background: #00ff88; border-radius: 50%; animation: pulse 1s infinite;"></div>
+        <span>👻 وضع الشبح</span>
+    </div>
+
+    <!-- زر فتح القائمة الجانبية -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- القائمة الجانبية -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin-bottom: 10px;">FLASH v</h3>
+            <p style="font-size: 12px; color: #888;">التطبيق الاحترافي للتواصل</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="sidebar-item active" onclick="switchToScreen('welcome', 'Welcome')">🚀 البدء السريع</div>
+            <div class="sidebar-item" onclick="switchToScreen('dashboard', 'Dashboard')">📊 لوحة المعلومات</div>
+            <div class="sidebar-item" onclick="switchToScreen('chat', 'Chat')">💬 الدردشة</div>
+            <div class="sidebar-item" onclick="switchToScreen('reminders', 'SmartReminders')">🔔 التنبيهات الذكية</div>
+            <div class="sidebar-item" onclick="switchToScreen('profile', 'Profile')">👤 الملف الشخصي</div>
+            <div class="sidebar-item" onclick="switchToScreen('search', 'Search')">🔍 البحث</div>
+            <div class="sidebar-item" onclick="switchToScreen('notifications', 'Notifications')">📢 الإشعارات</div>
+            <div class="sidebar-item" onclick="switchToScreen('activities', 'Activities')">🎯 الأنشطة</div>
+            <div class="sidebar-item" onclick="switchToScreen('achievements', 'Achievements')">🏆 الإنجازات</div>
+            <div class="sidebar-item" onclick="switchToScreen('settings', 'Settings')">⚙️ الإعدادات</div>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            <div class="sidebar-item" onclick="toggleGhostMode()">👻 وضع الشبح</div>
+            <div class="sidebar-item" onclick="closeAllModals(); toggleSidebar()">✕ إغلاق</div>
+        </div>
+    </div>
+
+    <!-- طبقة تظليل النافذة المنبثقة -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeAllModals()"></div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main-content">
+
+        <!-- شاشة البدء السريع -->
+        <div class="welcome-screen active" id="welcome-screen">
+            <div class="welcome-logo">⚡</div>
+            <h1 class="welcome-title">مرحباً بك في FLASH</h1>
+            <p class="welcome-subtitle">تطبيق التواصل الفوري الاحترافي مع نظام التنبيهات الذكية</p>
+            
+            <div class="welcome-buttons">
+                <div class="welcome-btn" onclick="switchToScreen('dashboard', 'Dashboard')">
+                    <div style="font-size: 30px; margin-bottom: 10px;">📊</div>
+                    <div>لوحة المعلومات</div>
+                </div>
+                <div class="welcome-btn" onclick="switchToScreen('chat', 'Chat')">
+                    <div style="font-size: 30px; margin-bottom: 10px;">💬</div>
+                    <div>ابدأ الدردشة</div>
+                </div>
+                <div class="welcome-btn" onclick="switchToScreen('reminders', 'SmartReminders')">
+                    <div style="font-size: 30px; margin-bottom: 10px;">🔔</div>
+                    <div>التنبيهات الذكية</div>
+                </div>
+                <div class="welcome-btn" onclick="switchToScreen('profile', 'Profile')">
+                    <div style="font-size: 30px; margin-bottom: 10px;">👤</div>
+                    <div>ملفك الشخصي</div>
+                </div>
+            </div>
+
+            <div style="background: rgba(233, 69, 96, 0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(233, 69, 96, 0.3); margin-top: 30px;">
+                <h3 style="margin-bottom: 15px;">✨ المميزات الرئيسية:</h3>
+                <ul style="text-align: right; font-size: 14px; line-height: 2; color: #aaa;">
+                    <li>✅ دردشة فورية مع مكالمات صوتية وفيديو وراديو</li>
+                    <li>✅ نظام تنبيهات ذكي يتعلم من سلوكك</li>
+                    <li>✅ رسائل تلقائية مسبقة الإعداد</li>
+                    <li>✅ مرفقات متعددة: صور، ملفات، GIFs، إيموجي</li>
+                    <li>✅ 4 ثيمات جميلة وعصرية</li>
+                    <li>✅ وضع الشبح للخصوصية التامة</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- لوحة المعلومات -->
+        <div class="dashboard" id="dashboard-screen">
+            <div class="dashboard-header">
+                <h2>📊 لوحة المعلومات</h2>
+                <p>مرحباً بك! إليك ملخص نشاطك</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card" onclick="switchToScreen('chat', 'Chat')">
+                    <div class="dashboard-card-icon">💬</div>
+                    <div class="dashboard-card-number" id="stat-messages">0</div>
+                    <div class="dashboard-card-label">الرسائل</div>
+                </div>
+                <div class="dashboard-card" onclick="switchToScreen('reminders', 'SmartReminders')">
+                    <div class="dashboard-card-icon">🔔</div>
+                    <div class="dashboard-card-number" id="stat-reminders">0</div>
+                    <div class="dashboard-card-label">التنبيهات</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-card-icon">✅</div>
+                    <div class="dashboard-card-number" id="stat-sent-auto">0</div>
+                    <div class="dashboard-card-label">مرسلة تلقائياً</div>
+                </div>
+                <div class="dashboard-card" onclick="switchToScreen('profile', 'Profile')">
+                    <div class="dashboard-card-icon">👤</div>
+                    <div class="dashboard-card-number" id="stat-friends">0</div>
+                    <div class="dashboard-card-label">الأصدقاء</div>
+                </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin-bottom: 15px;">🔥 الأنشطة الأخيرة</h3>
+                <div id="recent-activities" style="font-size: 13px; line-height: 2; color: #aaa;">
+                    <p>لا توجد أنشطة حتى الآن</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- الدردشة المحسنة -->
+        <div class="screen" id="chat-screen">
+            <div class="chat-screen-wrapper">
+                <!-- رأس الدردشة -->
+                <div class="chat-header">
+                    <div class="call-buttons">
+                        <button class="call-btn" onclick="toggleCallMenu()">☎️ مكالمة</button>
+                        <div class="call-menu" id="call-menu">
+                            <div class="call-menu-item" onclick="startCall('audio')">🎤 مكالمة صوتية</div>
+                            <div class="call-menu-item" onclick="startCall('video')">📹 مكالمة فيديو</div>
+                            <div class="call-menu-item" onclick="startCall('radio')">📻 راديو</div>
+                        </div>
+                    </div>
+                    <div class="chat-header-info">
+                        <div class="chat-header-name">أحمد محمد</div>
+                        <div class="chat-header-status">متصل الآن 🟢</div>
+                    </div>
+                </div>
+
+                <!-- منطقة الرسائل -->
+                <div class="chat-container" id="chat-container">
+                    <div class="message-bubble received">
+                        <div class="message-avatar">A</div>
+                        <div class="message-content">مرحباً! كيفك؟ 👋</div>
+                    </div>
+                </div>
+
+                <!-- منطقة الإدخال -->
+                <div class="chat-input-area">
+                    <div style="position: relative;">
+                        <div class="message-input-row">
+                            <input type="text" id="message-input" placeholder="اكتب رسالتك...">
+                            <button onclick="openAttachmentsMenu()">📎</button>
+                            <button class="send-btn" onclick="sendMessage()">📤</button>
+                        </div>
+                        
+                        <!-- قائمة المرفقات -->
+                        <div class="attachments-menu" id="attachments-menu">
+                            <div class="attachment-item" onclick="attachAction('stickers')">🏷️ ملصقات</div>
+                            <div class="attachment-item" onclick="attachAction('files')">📁 ملفات</div>
+                            <div class="attachment-item" onclick="attachAction('images')">🖼️ صور</div>
+                            <div class="attachment-item" onclick="attachAction('drawings')">🎨 رسومات</div>
+                            <div class="attachment-item" onclick="attachAction('gifs')">🎬 GIFs</div>
+                            <div class="attachment-item" onclick="attachAction('emoji')">😊 إيموجي</div>
+                        </div>
+                    </div>
+
+                    <div class="quick-reply">
+                        <button class="quick-reply-btn" onclick="insertQuickReply('❤️')">❤️</button>
+                        <button class="quick-reply-btn" onclick="insertQuickReply('😂')">😂</button>
+                        <button class="quick-reply-btn" onclick="insertQuickReply('👍')">👍</button>
+                        <button class="quick-reply-btn" onclick="insertQuickReply('🔥')">🔥</button>
+                        <button class="quick-reply-btn" onclick="insertQuickReply('👏')">👏</button>
+                        <button class="quick-reply-btn" onclick="insertQuickReply('😍')">😍</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- التنبيهات الذكية -->
+        <div class="smart-reminders" id="reminders-screen">
+            <div class="reminders-header">
+                <h2>🔔 التنبيهات الذكية</h2>
+                <p style="color: #888; margin-top: 5px;">قم بإنشاء تنبيهات ذكية ترسل رسائل تلقائية بناءً على الشروط المحددة</p>
+            </div>
+            
+            <button class="add-reminder-btn" onclick="openAddReminderModal()">➕ إضافة تنبيه جديد</button>
+
+            <div class="reminders-list" id="reminders-list">
+                <div style="text-align: center; color: #888; padding: 40px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📭</div>
+                    <p>لا توجد تنبيهات حتى الآن</p>
+                    <p style="font-size: 13px; margin-top: 10px;">انقر على "إضافة تنبيه جديد" لبدء الإنشاء</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- الملف الشخصي -->
+        <div class="profile-container" id="profile-screen">
+            <div class="profile-header">
+                <div class="profile-avatar-large">👤</div>
+                <div class="profile-name">مستخدم FLASH</div>
+                <div class="profile-id">@flash_user_2024</div>
+                <div class="profile-bio">مرحباً! أنا أستخدم تطبيق FLASH الاحترافي 🚀</div>
+            </div>
+
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <div class="profile-stat-number" id="profile-messages">0</div>
+                    <div class="profile-stat-label">الرسائل</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-number" id="profile-friends">0</div>
+                    <div class="profile-stat-label">الأصدقاء</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-number" id="profile-level">1</div>
+                    <div class="profile-stat-label">المستوى</div>
+                </div>
+            </div>
+
+            <button onclick="editProfile()" style="width: 100%; padding: 12px; background: #e94560; border: none; color: #fff; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 15px;">تعديل الملف الشخصي</button>
+        </div>
+
+        <!-- البحث المتقدم -->
+        <div class="search-container" id="search-screen">
+            <div class="search-bar">
+                <input type="text" class="search-input" id="search-input" placeholder="🔍 ابحث عن أصدقاء، رسائل، أو ملفات..." oninput="performSearch()">
+            </div>
+            <div class="search-suggestions" id="search-suggestions">
+                <div style="text-align: center; color: #888; padding: 20px;">ابدأ الكتابة للبحث...</div>
+            </div>
+        </div>
+
+        <!-- مركز الإشعارات -->
+        <div class="notifications-center" id="notifications-screen">
+            <h2 style="margin-bottom: 15px;">📢 مركز الإشعارات</h2>
+            <div id="notifications-list">
+                <div style="text-align: center; color: #888; padding: 40px;">لا توجد إشعارات جديدة 👏</div>
+            </div>
+        </div>
+
+        <!-- الأنشطة الحية -->
+        <div class="activities-feed" id="activities-screen">
+            <h2 style="margin-bottom: 15px;">🎯 الأنشطة الحية</h2>
+            <div id="activities-list">
+                <div style="text-align: center; color: #888; padding: 40px;">لا توجد أنشطة حالياً</div>
+            </div>
+        </div>
+
+        <!-- الإنجازات والشارات -->
+        <div class="achievements" id="achievements-screen">
+            <h2 style="margin-bottom: 15px;">🏆 الإنجازات والشارات</h2>
+            <div class="achievements-grid">
+                <div class="achievement-card">
+                    <div class="achievement-icon">🎯</div>
+                    <div class="achievement-name">البداية</div>
+                    <div class="achievement-progress">أرسل أول رسالة</div>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">🔔</div>
+                    <div class="achievement-name">منظم</div>
+                    <div class="achievement-progress">أنشئ أول تنبيه</div>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">⚡</div>
+                    <div class="achievement-name">الخبير</div>
+                    <div class="achievement-progress">أرسل 5 رسائل تلقائية</div>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">☎️</div>
+                    <div class="achievement-name">المتصل</div>
+                    <div class="achievement-progress">أجرِ أول مكالمة</div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon">🔒</div>
+                    <div class="achievement-name">المستكشف</div>
+                    <div class="achievement-progress">قيد التطوير</div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon">🔒</div>
+                    <div class="achievement-name">النجم</div>
+                    <div class="achievement-progress">قيد التطوير</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الإعدادات -->
+        <div class="screen" id="settings-screen">
+            <h2 style="margin-bottom: 15px;">⚙️ الإعدادات</h2>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px;">
+                <h3 style="margin-bottom: 15px;">🎨 الثيمات</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <button onclick="changeTheme('dark-theme')" style="padding: 10px; background: #0f0f23; border: 2px solid rgba(233, 69, 96, 0.5); color: #fff; border-radius: 8px; cursor: pointer;">🌙 الوضع الداكن</button>
+                    <button onclick="changeTheme('light-theme')" style="padding: 10px; background: #f5f5f5; border: 2px solid rgba(100, 100, 100, 0.3); color: #333; border-radius: 8px; cursor: pointer;">☀️ الوضع الفاتح</button>
+                    <button onclick="changeTheme('blue-theme')" style="padding: 10px; background: #001a4d; border: 2px solid rgba(0, 100, 200, 0.5); color: #fff; border-radius: 8px; cursor: pointer;">🔵 أزرق</button>
+                    <button onclick="changeTheme('purple-theme')" style="padding: 10px; background: #2d1b4e; border: 2px solid rgba(150, 100, 200, 0.5); color: #fff; border-radius: 8px; cursor: pointer;">🟣 بنفسجي</button>
+                </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin-bottom: 15px;">🔧 خيارات أخرى</h3>
+                <button onclick="resetData()" style="width: 100%; padding: 12px; background: rgba(255, 50, 50, 0.3); border: 1px solid rgba(255, 50, 50, 0.5); color: #ff6b7a; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px;">🗑️ إعادة تعيين البيانات</button>
+                <button onclick="exportData()" style="width: 100%; padding: 12px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 8px; cursor: pointer; font-weight: bold;">💾 تصدير البيانات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة تنبيه جديد -->
+    <div class="modal" id="add-reminder-modal">
+        <div class="modal-header">➕ إضافة تنبيه جديد</div>
+        
+        <div class="form-group">
+            <label>📝 عنوان التنبيه</label>
+            <input type="text" id="reminder-title" placeholder="مثال: محاضرة الصباح">
+        </div>
+
+        <div class="form-group">
+            <label>⏰ نوع الشرط</label>
+            <select id="reminder-type" onchange="updateConditionOptions()">
+                <option value="time">الوقت المحدد</option>
+                <option value="daily">يومي في وقت معين</option>
+                <option value="weekly">أسبوعي</option>
+                <option value="custom">مخصص</option>
+            </select>
+        </div>
+
+        <div id="condition-options">
+            <div class="form-group">
+                <label>🕐 الوقت</label>
+                <input type="time" id="reminder-time">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>👥 المستقبل</label>
+            <input type="text" id="reminder-recipient" placeholder="اسم الشخص أو المجموعة">
+        </div>
+
+        <div class="form-group">
+            <label>💬 الرسالة التلقائية</label>
+            <textarea id="reminder-message" placeholder="أنا في محاضرة الآن، سنتكلم لاحقاً..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>📅 ملاحظات إضافية (اختياري)</label>
+            <textarea id="reminder-notes" placeholder="أضف ملاحظات عن هذا التنبيه..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn save" onclick="saveReminder()">✅ حفظ التنبيه</button>
+            <button class="modal-btn cancel" onclick="closeAllModals()">❌ إلغاء</button>
+        </div>
+    </div>
+
+    <!-- الشريط السفلي -->
+    <div class="bottom-nav">
+        <div class="nav-item active-nav" onclick="switchToScreen('welcome', 'Welcome')">
+            <div>🚀</div>
+            <div>البدء</div>
+        </div>
+        <div class="nav-item" onclick="switchToScreen('dashboard', 'Dashboard')">
+            <div>📊</div>
+            <div>المعلومات</div>
+        </div>
+        <div class="nav-item" onclick="switchToScreen('chat', 'Chat')">
+            <div>💬</div>
+            <div>الدردشة</div>
+        </div>
+        <div class="nav-item" onclick="switchToScreen('reminders', 'SmartReminders')">
+            <div>🔔</div>
+            <div>التنبيهات</div>
+        </div>
+        <div class="nav-item" onclick="switchToScreen('profile', 'Profile')">
+            <div>👤</div>
+            <div>الملف</div>
+        </div>
+    </div>
+
+    <script>
+        // ========== نظام التنبيهات الذكية ==========
+        
+        class SmartReminderSystem {
+            constructor() {
+                this.reminders = JSON.parse(localStorage.getItem('flashv_reminders')) || [];
+                this.sentReminders = JSON.parse(localStorage.getItem('flashv_sent_reminders')) || [];
+                this.initializeSystem();
+            }
+
+            initializeSystem() {
+                // تشغيل فحص التنبيهات كل دقيقة
+                setInterval(() => this.checkAndExecuteReminders(), 60000);
+                this.checkAndExecuteReminders(); // فحص أولي
+            }
+
+            addReminder(reminder) {
+                const id = Date.now().toString();
+                reminder.id = id;
+                reminder.enabled = true;
+                reminder.createdAt = new Date().toISOString();
+                this.reminders.push(reminder);
+                this.saveToStorage();
+                return id;
+            }
+
+            deleteReminder(id) {
+                this.reminders = this.reminders.filter(r => r.id !== id);
+                this.saveToStorage();
+            }
+
+            toggleReminder(id) {
+                const reminder = this.reminders.find(r => r.id === id);
+                if (reminder) {
+                    reminder.enabled = !reminder.enabled;
+                    this.saveToStorage();
+                }
+            }
+
+            checkAndExecuteReminders() {
+                const now = new Date();
+                const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const currentDay = now.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+                this.reminders.forEach(reminder => {
+                    if (!reminder.enabled) return;
+
+                    let shouldExecute = false;
+
+                    if (reminder.type === 'time' && reminder.time === currentTime) {
+                        shouldExecute = true;
+                    } else if (reminder.type === 'daily' && reminder.time === currentTime) {
+                        shouldExecute = true;
+                    } else if (reminder.type === 'weekly' && reminder.day === currentDay && reminder.time === currentTime) {
+                        shouldExecute = true;
+                    }
+
+                    if (shouldExecute && !this.isReminderSentToday(reminder.id)) {
+                        this.executeReminder(reminder);
+                    }
+                });
+            }
+
+            isReminderSentToday(reminderId) {
+                const today = new Date().toDateString();
+                return this.sentReminders.some(r => 
+                    r.reminderId === reminderId && 
+                    new Date(r.sentAt).toDateString() === today
+                );
+            }
+
+            executeReminder(reminder) {
+                const sentRecord = {
+                    reminderId: reminder.id,
+                    sentAt: new Date().toISOString(),
+                    recipient: reminder.recipient,
+                    message: reminder.message
+                };
+                this.sentReminders.push(sentRecord);
+                this.saveToStorage();
+
+                // إضافة إشعار
+                this.addNotification(reminder);
+
+                // إضافة نشاط
+                this.addActivity(reminder);
+
+                console.log('✅ تم تنفيذ التنبيه:', reminder.title);
+            }
+
+            addNotification(reminder) {
+                const notifications = JSON.parse(localStorage.getItem('flashv_notifications')) || [];
+                notifications.push({
+                    id: Date.now().toString(),
+                    title: `تم إرسال: ${reminder.title}`,
+                    message: `تم إرسال الرسالة إلى ${reminder.recipient} تلقائياً`,
+                    type: 'success',
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('flashv_notifications', JSON.stringify(notifications));
+                updateNotifications();
+            }
+
+            addActivity(reminder) {
+                const activities = JSON.parse(localStorage.getItem('flashv_activities')) || [];
+                activities.push({
+                    id: Date.now().toString(),
+                    type: 'reminder',
+                    title: `رسالة تلقائية: ${reminder.title}`,
+                    message: `تم إرسال رسالة تلقائية إلى ${reminder.recipient}`,
+                    icon: '🤖',
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('flashv_activities', JSON.stringify(activities));
+                updateActivities();
+            }
+
+            saveToStorage() {
+                localStorage.setItem('flashv_reminders', JSON.stringify(this.reminders));
+                localStorage.setItem('flashv_sent_reminders', JSON.stringify(this.sentReminders));
+            }
+
+            getStatistics() {
+                return {
+                    totalReminders: this.reminders.length,
+                    enabledReminders: this.reminders.filter(r => r.enabled).length,
+                    sentToday: this.sentReminders.filter(r => 
+                        new Date(r.sentAt).toDateString() === new Date().toDateString()
+                    ).length
+                };
+            }
+        }
+
+        // تهيئة نظام التنبيهات الذكية
+        const smartReminderSystem = new SmartReminderSystem();
+
+        // ========== دوال واجهة المستخدم ==========
+
+        function switchToScreen(screenId, screenName) {
+            // إغلاق جميع الشاشات
+            const screens = document.querySelectorAll('.welcome-screen, .screen, .profile-container, .search-container, .notifications-center, .activities-feed, .achievements, .dashboard, .smart-reminders');
+            screens.forEach(screen => screen.classList.remove('active'));
+
+            // تفعيل الشاشة المختارة
+            const screen = document.getElementById(`${screenId}-screen`);
+            if (screen) {
+                screen.classList.add('active');
+            }
+
+            // تحديث الشريط السفلي
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active-nav');
+            });
+            event.target.closest('.nav-item')?.classList.add('active-nav');
+
+            // إغلاق القائمة الجانبية
+            toggleSidebar();
+
+            // تحديث إحصائيات السكرين
+            updateScreenStats(screenName);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('active'));
+            document.getElementById('modal-overlay').classList.remove('active');
+            closeAttachmentsMenu();
+            closeCallMenu();
+        }
+
+        function toggleCallMenu() {
+            const callMenu = document.getElementById('call-menu');
+            callMenu.classList.toggle('active');
+        }
+
+        function closeCallMenu() {
+            const callMenu = document.getElementById('call-menu');
+            callMenu.classList.remove('active');
+        }
+
+        function startCall(type) {
+            alert(`📞 بدء مكالمة ${type === 'audio' ? 'صوتية' : type === 'video' ? 'فيديو' : 'راديو'}...`);
+            closeCallMenu();
+            unlockAchievement('المتصل');
+        }
+
+        function openAttachmentsMenu() {
+            const menu = document.getElementById('attachments-menu');
+            menu.classList.toggle('active');
+        }
+
+        function closeAttachmentsMenu() {
+            const menu = document.getElementById('attachments-menu');
+            menu.classList.remove('active');
+        }
+
+        function attachAction(type) {
+            const attachmentNames = {
+                'stickers': '🏷️ الملصقات',
+                'files': '📁 الملفات',
+                'images': '🖼️ الصور',
+                'drawings': '🎨 الرسومات',
+                'gifs': '🎬 GIFs',
+                'emoji': '😊 الإيموجي'
+            };
+            alert(`تم اختيار: ${attachmentNames[type]}\nسيتم تطوير هذه الميزة قريباً!`);
+            closeAttachmentsMenu();
+        }
+
+        function openAddReminderModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('add-reminder-modal').classList.add('active');
+        }
+
+        function updateConditionOptions() {
+            const type = document.getElementById('reminder-type').value;
+            const conditionOptions = document.getElementById('condition-options');
+            
+            let html = '';
+            
+            if (type === 'time') {
+                html = `
+                    <div class="form-group">
+                        <label>🕐 الوقت</label>
+                        <input type="time" id="reminder-time">
+                    </div>
+                `;
+            } else if (type === 'daily') {
+                html = `
+                    <div class="form-group">
+                        <label>🕐 الوقت يومياً</label>
+                        <input type="time" id="reminder-time">
+                    </div>
+                `;
+            } else if (type === 'weekly') {
+                html = `
+                    <div class="form-group">
+                        <label>📅 اختر اليوم</label>
+                        <select id="reminder-day">
+                            <option value="السبت">السبت</option>
+                            <option value="الأحد">الأحد</option>
+                            <option value="الإثنين">الإثنين</option>
+                            <option value="الثلاثاء">الثلاثاء</option>
+                            <option value="الأربعاء">الأربعاء</option>
+                            <option value="الخميس">الخميس</option>
+                            <option value="الجمعة">الجمعة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🕐 الوقت</label>
+                        <input type="time" id="reminder-time">
+                    </div>
+                `;
+            } else if (type === 'custom') {
+                html = `
+                    <div class="form-group">
+                        <label>📝 وصف الشرط المخصص</label>
+                        <textarea id="reminder-custom-condition" placeholder="مثال: عندما أكون في المحاضرة"></textarea>
+                    </div>
+                `;
+            }
+            
+            conditionOptions.innerHTML = html;
+        }
+
+        function saveReminder() {
+            const title = document.getElementById('reminder-title').value.trim();
+            const type = document.getElementById('reminder-type').value;
+            const time = document.getElementById('reminder-time')?.value;
+            const recipient = document.getElementById('reminder-recipient').value.trim();
+            const message = document.getElementById('reminder-message').value.trim();
+            const notes = document.getElementById('reminder-notes').value.trim();
+
+            if (!title || !recipient || !message) {
+                alert('⚠️ يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+
+            if ((type === 'time' || type === 'daily' || type === 'weekly') && !time) {
+                alert('⚠️ يرجى اختيار الوقت');
+                return;
+            }
+
+            const reminder = {
+                title,
+                type,
+                time: time || null,
+                day: document.getElementById('reminder-day')?.value || null,
+                recipient,
+                message,
+                notes
+            };
+
+            if (type === 'custom') {
+                reminder.customCondition = document.getElementById('reminder-custom-condition').value;
+            }
+
+            smartReminderSystem.addReminder(reminder);
+            closeAllModals();
+            renderReminders();
+            updateDashboardStats();
+
+            // إضافة إنجاز
+            unlockAchievement('منظم');
+        }
+
+        function renderReminders() {
+            const remindersList = document.getElementById('reminders-list');
+            const reminders = smartReminderSystem.reminders;
+
+            if (reminders.length === 0) {
+                remindersList.innerHTML = `
+                    <div style="text-align: center; color: #888; padding: 40px;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">📭</div>
+                        <p>لا توجد تنبيهات حتى الآن</p>
+                        <p style="font-size: 13px; margin-top: 10px;">انقر على "إضافة تنبيه جديد" لبدء الإنشاء</p>
+                    </div>
+                `;
+                return;
+            }
+
+            remindersList.innerHTML = reminders.map(reminder => `
+                <div class="reminder-card ${reminder.enabled ? 'active-reminder' : ''}">
+                    <div class="reminder-info">
+                        <div class="reminder-title">${reminder.title}</div>
+                        <div class="reminder-condition">
+                            ${reminder.type === 'time' ? `⏰ وقت محدد: ${reminder.time}` : ''}
+                            ${reminder.type === 'daily' ? `📅 يومياً في: ${reminder.time}` : ''}
+                            ${reminder.type === 'weekly' ? `📆 ${reminder.day} في: ${reminder.time}` : ''}
+                            ${reminder.type === 'custom' ? `✏️ ${reminder.customCondition}` : ''}
+                        </div>
+                        <div style="color: #aaa; font-size: 13px; margin-top: 8px;">👤 إلى: <strong>${reminder.recipient}</strong></div>
+                        <div class="reminder-message">"${reminder.message}"</div>
+                        ${reminder.notes ? `<div style="color: #999; font-size: 12px; margin-top: 8px;">📝 ${reminder.notes}</div>` : ''}
+                    </div>
+                    <div class="reminder-actions">
+                        <div class="reminder-toggle ${reminder.enabled ? 'enabled' : ''}" onclick="toggleReminderState('${reminder.id}')"></div>
+                        <button class="reminder-delete-btn" onclick="deleteReminderItem('${reminder.id}')">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleReminderState(reminderId) {
+            smartReminderSystem.toggleReminder(reminderId);
+            renderReminders();
+        }
+
+        function deleteReminderItem(reminderId) {
+            if (confirm('هل تريد حذف هذا التنبيه؟')) {
+                smartReminderSystem.deleteReminder(reminderId);
+                renderReminders();
+                updateDashboardStats();
+            }
+        }
+
+        function updateScreenStats(screenName) {
+            if (screenName === 'SmartReminders') {
+                renderReminders();
+            } else if (screenName === 'Dashboard') {
+                updateDashboardStats();
+            }
+        }
+
+        function updateDashboardStats() {
+            const stats = smartReminderSystem.getStatistics();
+            document.getElementById('stat-reminders').textContent = stats.totalReminders;
+            document.getElementById('stat-sent-auto').textContent = stats.sentToday;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            const container = document.getElementById('chat-container');
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble sent';
+            bubble.innerHTML = `
+                <div class="message-content">${message}</div>
+            `;
+            
+            container.appendChild(bubble);
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+            closeAttachmentsMenu();
+        }
+
+        function insertQuickReply(emoji) {
+            const input = document.getElementById('message-input');
+            input.value += emoji;
+        }
+
+        function editProfile() {
+            alert('سيتم تطوير خاصية تعديل الملف الشخصي قريباً');
+        }
+
+        function performSearch() {
+            const query = document.getElementById('search-input').value;
+            if (query.length < 2) {
+                document.getElementById('search-suggestions').innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">ابدأ الكتابة للبحث...</div>';
+                return;
+            }
+
+            const suggestions = [
+                { name: 'أحمد محمد', type: 'صديق' },
+                { name: 'مجموعة الدراسة', type: 'مجموعة' },
+                { name: 'ملف البحث', type: 'ملف' }
+            ].filter(item => item.name.includes(query));
+
+            if (suggestions.length === 0) {
+                document.getElementById('search-suggestions').innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">لا توجد نتائج</div>';
+                return;
+            }
+
+            document.getElementById('search-suggestions').innerHTML = suggestions.map(s => 
+                `<div class="search-suggestion">${s.name} <span style="color: #888; font-size: 11px;"> - ${s.type}</span></div>`
+            ).join('');
+        }
+
+        function updateNotifications() {
+            const notifications = JSON.parse(localStorage.getItem('flashv_notifications')) || [];
+            const notificationsList = document.getElementById('notifications-list');
+
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = '<div style="text-align: center; color: #888; padding: 40px;">لا توجد إشعارات جديدة 👏</div>';
+                return;
+            }
+
+            notificationsList.innerHTML = notifications.slice(-10).reverse().map(n => `
+                <div class="notification-item">
+                    <div class="notification-content">
+                        <div class="notification-title">${n.title}</div>
+                        <div class="notification-time">${new Date(n.timestamp).toLocaleString('ar-SA')}</div>
+                    </div>
+                    <div class="notification-action">
+                        <button class="notification-btn">✅</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateActivities() {
+            const activities = JSON.parse(localStorage.getItem('flashv_activities')) || [];
+            const activitiesList = document.getElementById('activities-list');
+
+            if (activities.length === 0) {
+                activitiesList.innerHTML = '<div style="text-align: center; color: #888; padding: 40px;">لا توجد أنشطة حالياً</div>';
+                return;
+            }
+
+            activitiesList.innerHTML = activities.slice(-10).reverse().map(a => `
+                <div class="activity-item">
+                    <div class="activity-icon">${a.icon}</div>
+                    <div class="activity-content">
+                        <div class="activity-text">${a.title}</div>
+                        <div class="activity-time">${new Date(a.timestamp).toLocaleString('ar-SA')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleGhostMode() {
+            document.body.classList.toggle('ghost-mode');
+            document.body.classList.toggle('normal-mode');
+            document.getElementById('ghostIndicator').classList.toggle('active');
+        }
+
+        function changeTheme(theme) {
+            document.body.classList.remove('dark-theme', 'light-theme', 'blue-theme', 'purple-theme');
+            document.body.classList.add(theme);
+            localStorage.setItem('flashv_theme', theme);
+        }
+
+        function unlockAchievement(name) {
+            const achievements = JSON.parse(localStorage.getItem('flashv_achievements')) || [];
+            if (!achievements.includes(name)) {
+                achievements.push(name);
+                localStorage.setItem('flashv_achievements', JSON.stringify(achievements));
+            }
+        }
+
+        function resetData() {
+            if (confirm('⚠️ هل تريد حقاً حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function exportData() {
+            const data = {
+                reminders: smartReminderSystem.reminders,
+                sentReminders: smartReminderSystem.sentReminders,
+                notifications: JSON.parse(localStorage.getItem('flashv_notifications')) || [],
+                activities: JSON.parse(localStorage.getItem('flashv_activities')) || [],
+                timestamp: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `FLASHV_Data_${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+        }
+
+        // إغلاق القوائم عند النقر خارجها
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.call-buttons') && !event.target.closest('.call-menu')) {
+                closeCallMenu();
+            }
+            if (!event.target.closest('.message-input-row') && !event.target.closest('.attachments-menu')) {
+                closeAttachmentsMenu();
+            }
+        });
+
+        // تحميل الثيمة المحفوظة
+        window.addEventListener('load', () => {
+            const savedTheme = localStorage.getItem('flashv_theme') || 'dark-theme';
+            changeTheme(savedTheme);
+            updateDashboardStats();
+            updateNotifications();
+            updateActivities();
+        });
+
+        // فحص التنبيهات عند تحميل الصفحة
+        window.addEventListener('load', () => {
+            smartReminderSystem.checkAndExecuteReminders();
+        });
+    </script>
+
+</body>
+</html>
